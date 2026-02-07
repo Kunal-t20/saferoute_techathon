@@ -1,4 +1,16 @@
-safe-route-ai/
+
+#### Environment setup
+
+- python -m venv myenv
+
+- myenv\scripts\activate
+
+#### install requirements
+
+- pip install -r requirements.txt
+
+
+#### safe-route-ai/
 ```
 │
 ├── backend/
@@ -63,12 +75,3 @@ safe-route-ai/
 └── docker-compose.yml (optional)
 ```
 
-#### Environment setup
-
-- python -m venv myenv
-
-- myenv\scripts\activate
-
-#### install requirements
-
-- pip install -r requirements.txt
