@@ -21,7 +21,9 @@
 │   │   │   ├── risk_service.py     # ML prediction logic
 │   │   │   ├── route_service.py    # Route safety scoring
 │   │   │   └── weather_service.py  # Weather API + caching
-│   │   │
+│   │   │   ├── heatmap_service.py      # Cluster/hotspot logic   
+│   │   │   ├── explanation_service.py  # LLM AI summary          
+│   │   │   └── hazard_service.py       # Community report DB 
 │   │   ├── models/
 │   │   │   ├── risk_model.pkl      # Trained ML model
 │   │   │   └── cluster_model.pkl   # Hotspot clustering model
@@ -33,7 +35,7 @@
 │   │   ├── preprocessing.py        # Cleaning + feature engineering
 │   │   ├── clustering.py           # DBSCAN / KMeans hotspots
 │   │   └── train_model.py          # Train & save ML models
-│   │
+│   │       
 │   ├── Data/
 │   │   ├── raw/accidents.csv       # Original dataset
 │   │   └── processed/clean.csv     # Cleaned dataset
