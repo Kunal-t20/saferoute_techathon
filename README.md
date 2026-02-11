@@ -23,7 +23,9 @@
 │   │   │   └── weather_service.py  # Weather API + caching
 │   │   │   ├── heatmap_service.py      # Cluster/hotspot logic   
 │   │   │   ├── explanation_service.py  # LLM AI summary          
-│   │   │   └── hazard_service.py       # Community report DB 
+│   │   │   ├── hazard_service.py       # Community report DB 
+|   |   |   ├── geocode_service.py  # Convert Location to lat-lan form
+|   |   |   
 │   │   ├── models/
 │   │   │   ├── risk_model.pkl      # Trained ML model
 │   │   │   └── cluster_model.pkl   # Hotspot clustering model
