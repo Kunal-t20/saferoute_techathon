@@ -32,3 +32,10 @@ class RouteRiskResponse(BaseModel):
     risk_percentage: int
     level: str
     hotspot_hits: int
+
+
+class HazardInput(BaseModel):
+    lat: float
+    lng: float
+    type: str
+    description: str
