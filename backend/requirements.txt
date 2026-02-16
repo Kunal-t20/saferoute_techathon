@@ -11,3 +11,4 @@ sqlalchemy
 pydantic
 pydantic-settings
 requests
+groq

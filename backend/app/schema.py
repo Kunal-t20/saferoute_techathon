@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List,Optional
 
 # ---------- HEATMAP ----------
 class HeatmapPoint(BaseModel):
@@ -28,14 +28,23 @@ class RouteInput(BaseModel):
     points: List[Point]
 
 
-class RouteRiskResponse(BaseModel):
-    risk_percentage: int
-    level: str
-    hotspot_hits: int
-
-
 class HazardInput(BaseModel):
     lat: float
     lng: float
     type: str
     description: str
+
+class RiskInput(BaseModel):
+    weather: int
+    road_condition: int
+    fatalities: int
+    serious_injuries: int
+    minor_injuries: int
+
+class RouteRiskResponse(BaseModel):
+    risk_percentage: int
+    level: str
+    hotspot_hits: int
+    hazard_hits: int
+    weather: str
+    explanation: Optional[str] = None
