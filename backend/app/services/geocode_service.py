@@ -2,6 +2,7 @@ import requests
 
 BASE_URL = "https://nominatim.openstreetmap.org/search"
 
+
 def geocode_address(address: str):
     try:
         params = {

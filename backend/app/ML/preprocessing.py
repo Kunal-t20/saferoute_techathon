@@ -1,14 +1,23 @@
-import pandas as pd 
+import pandas as pd
 
+def preprocess_data(path):
 
-def preprocess(File_path):
+    df = pd.read_csv(path)
 
-    df=pd.read_csv(File_path)
-    
-    df = pd.get_dummies(df)
+    # ----- DATE FEATURES -----
+    df['date'] = pd.to_datetime(df['date'], dayfirst=True, errors='coerce')
+    df['hour'] = pd.to_datetime(df['time'], errors='coerce').dt.hour
 
-    return df
+    df = df.dropna(subset=['date', 'hour'])
 
+    df['year'] = df['date'].dt.year
+    df['month'] = df['date'].dt.month
+    df['day'] = df['date'].dt.day
 
+    df.drop(['date','time','accident_index'], axis=1, inplace=True)
 
+    # ----- TARGET -----
+    y = df['accident_severity']
+    X = df.drop('accident_severity', axis=1)
 
+    return X, y

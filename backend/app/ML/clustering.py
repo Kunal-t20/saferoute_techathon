@@ -1,42 +1,42 @@
 import pandas as pd
-from sklearn.cluster import DBSCAN   # DBSCAN = Density Based Spatial Clustering
-from ML.preprocessing import preprocess
+import joblib
+
+from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
-import pickle
 
-# 1. Load and preprocess dataset
-file_path = r"F:\Projects\techathon\backend\app\Data\india_metro_accidents_2000.csv"
-df = preprocess(file_path)
+DATA_PATH = r"F:\Projects\techathon\backend\app\Data\AccidentsBig_cleaned.csv"
+SAVE_PATH = r"F:\Projects\techathon\backend\app\models\clustered.csv"
 
-# 2. Select geographic coordinates
-coordinates = df[['Latitude', 'Longitude']]
 
-# 3. Scale coordinates (important for distance-based algorithms)
-scaler = StandardScaler()
-scaled_coordinates = scaler.fit_transform(coordinates)
+def run_clustering():
 
-# 4. Apply DBSCAN clustering
-# eps = radius distance
-# min_samples = minimum points to form a cluster
-density_cluster_model = DBSCAN(eps=0.3, min_samples=10)
-cluster_labels = density_cluster_model.fit_predict(scaled_coordinates)
+    df = pd.read_csv(DATA_PATH)
 
-# 5. Assign cluster labels to dataframe
-df['cluster_id'] = cluster_labels
+    # ---- ONLY GEO FEATURES ----
+    coords = df[['latitude', 'longitude']].dropna()
 
-# 6. Check cluster distribution
-print(df['cluster_id'].value_counts())
+    scaler = StandardScaler()
+    scaled_coords = scaler.fit_transform(coords)
 
-cluster_model=r"F:\Projects\techathon\backend\app\models\cluster_model.pkl"
-# 7. Save clustering model (Density-Based model, NOT Database)
-with open(cluster_model, 'wb') as f:
-    pickle.dump(density_cluster_model, f)
+    # ---- DBSCAN ----
+    db = DBSCAN(
+        eps=0.3,
+        min_samples=10
+    )
 
-scaler_path=r"F:\Projects\techathon\backend\app\models\scaler.pkl"
-# 8. Save scaler for future coordinate transforms
-with open(scaler_path, 'wb') as f:
-    pickle.dump(scaler, f)
+    clusters = db.fit_predict(scaled_coords)
 
-clutered_csv_path=r"F:\Projects\techathon\backend\app\models\clustered.csv"
-# 9. Save clustered dataset for heatmap usage
-df.to_csv(clutered_csv_path, index=False)
+    coords['cluster_id'] = clusters
+
+    # merge back
+    df = df.loc[coords.index]
+    df['cluster_id'] = clusters
+
+    df.to_csv(SAVE_PATH, index=False)
+
+    print("Clusters created:")
+    print(df['cluster_id'].value_counts())
+
+
+if __name__ == "__main__":
+    run_clustering()

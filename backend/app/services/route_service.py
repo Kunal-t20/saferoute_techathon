@@ -7,65 +7,129 @@ from app.services.explaination_service import generate_explanation
 
 DATA_PATH = r"F:\Projects\techathon\backend\app\models\clustered.csv"
 
+# ==================================================
+# GLOBAL HOTSPOT CACHE (LOAD ONCE)
+# ==================================================
+hotspots_cache = None
 
+
+def load_hotspots():
+    global hotspots_cache
+
+    if hotspots_cache is None:
+        df = pd.read_csv(DATA_PATH)
+        df.columns = df.columns.str.strip().str.lower()
+        df = df[df["cluster_id"] != -1]
+
+        hotspots_cache = df.groupby("cluster_id").agg({
+            "latitude": "mean",
+            "longitude": "mean",
+            "cluster_id": "count"
+        }).rename(columns={"cluster_id": "intensity"}).reset_index()
+
+    return hotspots_cache
+
+
+# ==================================================
+# DISTANCE FUNCTION
+# ==================================================
 def haversine(lat1, lon1, lat2, lon2):
     R = 6371
     dlat = radians(lat2 - lat1)
     dlon = radians(lon2 - lon1)
-    a = sin(dlat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon/2)**2
+
+    a = sin(dlat / 2) ** 2 + \
+        cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
+
     c = 2 * asin(sqrt(a))
     return R * c
 
 
+# ==================================================
+# ROUTE SAMPLING (PERFORMANCE BOOST)
+# ==================================================
+def sample_route(route_points, max_points=150):
+    if len(route_points) <= max_points:
+        return route_points
+
+    step = len(route_points) // max_points
+    return route_points[::step]
+
+
+# ==================================================
+# MAIN RISK ENGINE
+# ==================================================
 def calculate_route_risk(route_points: list):
 
-    df = pd.read_csv(DATA_PATH)
-    df.columns = df.columns.str.strip().str.lower()
-    df = df[df['cluster_id'] != -1]
-
-    hotspots = df.groupby('cluster_id').agg({
-        'latitude': 'mean',
-        'longitude': 'mean',
-        'cluster_id': 'count'
-    }).rename(columns={'cluster_id': 'intensity'}).reset_index()
+    hotspots = load_hotspots()
+    route_points = sample_route(route_points)
 
     risk_score = 0
     hotspot_hits = 0
     hazard_hits = 0
 
-    # -------- WEATHER --------
-    first = route_points[0]
-    lat0 = first['lat']
-    lng0 = first['lng']
+    hotspot_seen = set()
+    hazard_seen = set()
 
-    weather_label = get_weather(lat0, lng0)
+    # ==================================================
+    # WEATHER RISK
+    # ==================================================
+    first = route_points[0]
+    weather_label = get_weather(first["lat"], first["lng"])
     risk_score += weather_risk_multiplier(weather_label)
 
-    # -------- HAZARDS --------
+    # ==================================================
+    # LOAD HAZARDS
+    # ==================================================
     hazards = get_hazards()
 
+    # ==================================================
+    # ROUTE ANALYSIS
+    # ==================================================
     for point in route_points:
 
-        lat = point['lat']
-        lng = point['lng']
+        lat = point["lat"]
+        lng = point["lng"]
 
-        # HOTSPOTS
-        for _, hotspot in hotspots.iterrows():
-            dist = haversine(lat, lng, hotspot['latitude'], hotspot['longitude'])
+        # ---------- HOTSPOTS ----------
+        for idx, hotspot in hotspots.iterrows():
 
-            if dist < 2:
-                risk_score += hotspot['intensity'] * 0.01
-                hotspot_hits += 1
+            dist = haversine(
+                lat,
+                lng,
+                hotspot["latitude"],
+                hotspot["longitude"]
+            )
 
-        # HAZARDS
-        for hz in hazards:
-            dist_hz = haversine(lat, lng, hz['lat'], hz['lng'])
+            if dist < 2:  # within 2km
 
-            if dist_hz < 1:
-                risk_score += 25
-                hazard_hits += 1
+                if idx not in hotspot_seen:
+                    risk_score += hotspot["intensity"] * 0.4
+                    hotspot_hits += 1
+                    hotspot_seen.add(idx)
 
-    # -------- LEVEL --------
+        # ---------- HAZARDS ----------
+        for i, hz in enumerate(hazards):
+
+            dist_hz = haversine(
+                lat,
+                lng,
+                hz["lat"],
+                hz["lng"]
+            )
+
+            if dist_hz < 1:  # within 1km
+
+                if i not in hazard_seen:
+                    risk_score += 20
+                    hazard_hits += 1
+                    hazard_seen.add(i)
+
+    # ==================================================
+    # NORMALIZE
+    # ==================================================
+    risk_score = min(risk_score, 100)
+
     if risk_score > 70:
         level = "high"
     elif risk_score > 40:
@@ -73,9 +137,8 @@ def calculate_route_risk(route_points: list):
     else:
         level = "low"
 
-    risk_percentage = min(int(risk_score), 100)
+    risk_percentage = int(risk_score)
 
-    # -------- EXPLANATION --------
     explanation = generate_explanation(
         risk_percentage=risk_percentage,
         hotspot_hits=hotspot_hits,
